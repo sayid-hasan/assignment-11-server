@@ -38,6 +38,8 @@ async function run() {
     });
     app.get("/blogs", async (req, res) => {
       const limit = 6;
+      const cursor = await blogsCollection.find().limit(limit).toArray();
+      res.send(cursor);
     });
 
     app.get("/", (req, res) => {
