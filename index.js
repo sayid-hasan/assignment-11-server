@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -29,6 +29,8 @@ async function run() {
 
     //   database
     const blogsCollection = client.db("blogsDB").collection("blogs");
+    // comment collection
+    const commentsCollection = client.db("blogsDB").collection("comments");
     // adding data from add blog page on blogCollection through post method
     app.post("/addblogs", async (req, res) => {
       const blog = req.body;
@@ -36,10 +38,37 @@ async function run() {
       const result = await blogsCollection.insertOne(blog);
       res.send(result);
     });
+    // adding commments on database through post
+    app.post("/comments", async (req, res) => {
+      const comment = req.body;
+      // console.log(comment);
+      const result = await commentsCollection.insertOne(comment);
+      res.send(result);
+    });
+    // getting comments for ui
+    app.get("/allcomment/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = {
+        blog_id: id,
+      };
+
+      const cursor = await commentsCollection.find(query).toArray();
+      res.send(cursor);
+    });
+
     app.get("/blogs", async (req, res) => {
       const limit = 6;
       const cursor = await blogsCollection.find().limit(limit).toArray();
       res.send(cursor);
+    });
+    // getting single data by id for view details
+    app.get("/blogs/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const query = { _id: new ObjectId(id) };
+      const result = await blogsCollection.findOne(query);
+      res.send(result);
     });
 
     app.get("/", (req, res) => {
