@@ -50,12 +50,24 @@ async function run() {
     // posting data on wishlist
     app.post("/wishlist", async (req, res) => {
       const data = req.body;
+      const email = req.query.email;
       const query = {
         id: data.id,
+        wishListerEmail: email,
       };
       const ifexist = await wishlistCollection.findOne(query);
       if (ifexist) return;
       const result = await wishlistCollection.insertOne(data);
+      res.send(result);
+    });
+    // getting data for specific user in wishlist
+    app.get("/wishlists", async (req, res) => {
+      const email = req.query.email;
+      console.log("wishlist", email);
+      const query = {
+        wishListerEmail: email,
+      };
+      const result = await wishlistCollection.find(query).toArray();
       res.send(result);
     });
 
