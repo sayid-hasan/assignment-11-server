@@ -45,6 +45,27 @@ async function run() {
       const result = await commentsCollection.insertOne(comment);
       res.send(result);
     });
+    // updating blog data
+    app.patch("/updateblog/:id", async (req, res) => {
+      const id = req.params.id;
+      const blog = req.body;
+      console.log(id, blog);
+      const filter = { _id: new ObjectId(id) };
+      const updateBlog = {
+        $set: {
+          user_email: blog.user_email,
+          blog_title: blog.blog_title,
+          user_name: blog.user_name,
+          image: blog.image,
+          category_name: blog.category_name,
+
+          short_description: blog.short_description,
+          long_description: blog.long_description,
+        },
+      };
+      const result = await blogsCollection.updateOne(filter, updateBlog);
+      res.send(result);
+    });
     // getting comments for ui
     app.get("/allcomment/:id", async (req, res) => {
       const id = req.params.id;
