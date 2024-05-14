@@ -31,6 +31,8 @@ async function run() {
     const blogsCollection = client.db("blogsDB").collection("blogs");
     // comment collection
     const commentsCollection = client.db("blogsDB").collection("comments");
+    // wishlist collection
+    const wishlistCollection = client.db("blogsDB").collection("wishlist");
     // adding data from add blog page on blogCollection through post method
     app.post("/addblogs", async (req, res) => {
       const blog = req.body;
@@ -45,6 +47,18 @@ async function run() {
       const result = await commentsCollection.insertOne(comment);
       res.send(result);
     });
+    // posting data on wishlist
+    app.post("/wishlist", async (req, res) => {
+      const data = req.body;
+      const query = {
+        id: data.id,
+      };
+      const ifexist = await wishlistCollection.findOne(query);
+      if (ifexist) return;
+      const result = await wishlistCollection.insertOne(data);
+      res.send(result);
+    });
+
     // updating blog data
     app.patch("/updateblog/:id", async (req, res) => {
       const id = req.params.id;
