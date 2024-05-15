@@ -71,6 +71,17 @@ async function run() {
       res.send(result);
     });
 
+    // deleting wishlist
+    app.delete("/wishlist/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log("dele", id);
+      const query = {
+        _id: new ObjectId(id),
+      };
+      const result = await wishlistCollection.deleteOne(query);
+      res.send(result);
+    });
+
     // updating blog data
     app.patch("/updateblog/:id", async (req, res) => {
       const id = req.params.id;
