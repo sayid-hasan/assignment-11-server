@@ -177,7 +177,14 @@ async function run() {
       res.send(cursor);
     });
     app.get("/allblogs", async (req, res) => {
-      const cursor = await blogsCollection.find().toArray();
+      const filter = req.query.filter;
+
+      let query = {};
+      if (filter) {
+        query = { category_name: filter };
+      }
+
+      const cursor = await blogsCollection.find(query).toArray();
       res.send(cursor);
     });
     // getting single data by id for view details
