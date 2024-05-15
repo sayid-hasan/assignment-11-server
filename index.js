@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -7,8 +9,41 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: ["http://localhost:5173"],
+    credentials: true,
+  })
+);
 app.use(express.json());
+
+// middle ware created by me
+const logger = (req, res, next) => {
+  console.log("in middlware", req.method, req.url);
+  next();
+};
+const verifyToken = (req, res, next) => {
+  const token = req?.cookies?.token;
+  if (!token) {
+    res.status(401).send("unathorized access");
+  }
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
+    if (err) {
+      res.status(401).send("Unathorized access");
+    } else {
+      req.user = decoded;
+    }
+  });
+
+  next();
+};
+
+const cookieOption = {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+  secure: process.env.NODE_ENV === "production" ? true : false,
+};
 
 console.log(process.env.DB_USER);
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.grteoyu.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
@@ -26,6 +61,27 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+
+    // jwt
+    // auth related api
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "6h",
+      });
+      res.cookie("token", token, cookieOption).send({ success: true });
+    });
+    app.post("/logout", async (req, res) => {
+      const user = req.body;
+      console.log("logging out user ", user);
+      res
+        .clearCookie("token", {
+          ...cookieOption,
+          maxAge: 0,
+        })
+        .send({ loggedout: true });
+    });
 
     //   database
     const blogsCollection = client.db("blogsDB").collection("blogs");
@@ -121,8 +177,9 @@ async function run() {
       res.send(cursor);
     });
     // getting single data by id for view details
-    app.get("/blogs/:id", async (req, res) => {
+    app.get("/blogs/:id", logger, async (req, res) => {
       const id = req.params.id;
+
       console.log(id);
       const query = { _id: new ObjectId(id) };
       const result = await blogsCollection.findOne(query);
