@@ -176,6 +176,10 @@ async function run() {
       const cursor = await blogsCollection.find().limit(limit).toArray();
       res.send(cursor);
     });
+    app.get("/allblogs", async (req, res) => {
+      const cursor = await blogsCollection.find().toArray();
+      res.send(cursor);
+    });
     // getting single data by id for view details
     app.get("/blogs/:id", logger, async (req, res) => {
       const id = req.params.id;
