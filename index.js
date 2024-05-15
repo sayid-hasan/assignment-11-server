@@ -12,7 +12,11 @@ const port = process.env.PORT || 5000;
 app.use(cookieParser());
 app.use(
   cors({
-    origin: ["http://localhost:5173"],
+    origin: [
+      "http://localhost:5173",
+      "https://assignement-11-a4778.web.app",
+      "https://assignement-11-a4778.firebaseapp.com",
+    ],
     credentials: true,
   })
 );
@@ -60,7 +64,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     // jwt
     // auth related api
@@ -144,6 +148,9 @@ async function run() {
       const blog = req.body;
       console.log(id, blog);
       const filter = { _id: new ObjectId(id) };
+      const options = {
+        upsert: true,
+      };
       const updateBlog = {
         $set: {
           user_email: blog.user_email,
@@ -154,11 +161,23 @@ async function run() {
 
           short_description: blog.short_description,
           long_description: blog.long_description,
+          ownerImg: blog.owner_img,
         },
       };
-      const result = await blogsCollection.updateOne(filter, updateBlog);
+      const result = await blogsCollection.updateOne(
+        filter,
+        updateBlog,
+        options
+      );
       res.send(result);
     });
+    // getting featured blog
+    // getting featured blog
+    app.get("/featuredblogs", async (req, res) => {
+      const result = await blogsCollection.find().toArray();
+      res.send(result);
+    });
+
     // getting comments for ui
     app.get("/allcomment/:id", async (req, res) => {
       const id = req.params.id;
@@ -203,7 +222,7 @@ async function run() {
     });
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
