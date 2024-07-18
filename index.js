@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
-const cookieParser = require("cookie-parser");
+
 require("dotenv").config();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 
@@ -9,17 +9,8 @@ const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cookieParser());
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173",
-      "https://assignement-11-a4778.web.app",
-      "https://assignement-11-a4778.firebaseapp.com",
-    ],
-    credentials: true,
-  })
-);
+// middleware
+app.use(cors());
 app.use(express.json());
 
 // middle ware created by me
@@ -27,26 +18,26 @@ const logger = (req, res, next) => {
   console.log("in middlware", req.method, req.url);
   next();
 };
-const verifyToken = (req, res, next) => {
-  const token = req?.cookies?.token;
-  if (!token) {
-    res.status(401).send("unathorized access");
+// custom middleware
+// custom midlw=eware verify token
+const verifytoken = (req, res, next) => {
+  console.log("inside verifytoken middleware", req.headers.authorization);
+  if (!req.headers.authorization) {
+    return res.status(401).send({ message: "unauthorised access" });
   }
-  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, async (err, decoded) => {
+  const token = req.headers.authorization.split(" ")[1];
+  console.log("inside middlware verifytoken", token);
+
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    console.log("in verifytoken", err);
     if (err) {
-      res.status(401).send("Unathorized access");
-    } else {
-      req.user = decoded;
+      return res.status(401).send({ message: "unauthorised access2" });
     }
+
+    req.decoded = decoded;
+    console.log("from verifytoken decoded", decoded);
+    next();
   });
-
-  next();
-};
-
-const cookieOption = {
-  httpOnly: true,
-  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
-  secure: process.env.NODE_ENV === "production" ? true : false,
 };
 
 console.log(process.env.DB_USER);
@@ -68,13 +59,17 @@ async function run() {
 
     // jwt
     // auth related api
+    // jwt related api
+
     app.post("/jwt", async (req, res) => {
-      const user = req.body;
-      console.log(user);
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "6h",
+      const userinfo = req.body;
+      console.log("inside jwt", userinfo);
+      const token = await jwt.sign(userinfo, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "4h",
       });
-      res.cookie("token", token, cookieOption).send({ success: true });
+      console.log("in jwt", token);
+
+      res.send({ token });
     });
     app.post("/logout", async (req, res) => {
       const user = req.body;
@@ -208,7 +203,7 @@ async function run() {
       res.send(cursor);
     });
     // getting single data by id for view details
-    app.get("/blogs/:id", logger, async (req, res) => {
+    app.get("/blogs/:id", verifytoken, async (req, res) => {
       const id = req.params.id;
 
       console.log(id);
